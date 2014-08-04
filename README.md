@@ -3,7 +3,7 @@ jekyll-multilingual
 
 A multilingual approach for Jekyll/Octopress sites
 
-A detailed look into how this plugin works can be found [in this blog post]().
+A detailed look into how this plugin works can be found [in this blog post](http://brendamour.net/en/2014/08/03/multilingual-jekyll-how-to-post-in-more-than-one-language/).
 ## Features
 
 * Supports both multilingual and single language posts/pages
