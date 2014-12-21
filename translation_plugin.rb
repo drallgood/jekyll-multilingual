@@ -1,11 +1,11 @@
 module Jekyll
-    @parsedlangs = {}
-    def self.langs
-        @parsedlangs
-    end
-    def self.setlangs(l)
-        @parsedlangs = l
-    end
+  @parsedlangs = {}
+  def self.langs
+    @parsedlangs
+  end
+  def self.setlangs(l)
+    @parsedlangs = l
+  end
   class LocalizeTag < Liquid::Tag
 
     def initialize(tag_name, key, tokens)
@@ -22,7 +22,7 @@ module Jekyll
 
       lang = context.registers[:page]['language']
       if(!lang)
-          lang = context.registers[:site].config['languages'][0]
+        lang = context.registers[:site].config['languages'][0]
       end
       unless Jekyll.langs.has_key?(lang)
         puts "Loading translation from file #{context.registers[:site].source}/_i18n/#{lang}.yml"
@@ -83,10 +83,10 @@ module Jekyll
 
   module LanguageFilter
     def remove_language(input)
-        if(input)
-            return input.sub(/^(\/)?[a-z]{2}\//,'').sub("index.html",'')
-        end
-        return input
+      if(input)
+        return input.sub(/^(\/)?[a-z]{2}\//,'').sub("index.html",'')
+      end
+      return input
     end
   end
 end
