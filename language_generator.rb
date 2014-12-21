@@ -1,4 +1,6 @@
 module Jekyll
+    
+    # Monkey Patches
     class Page
         # The generated relative url of this page. e.g. /about.html.
         #
@@ -58,127 +60,175 @@ module Jekyll
                              }).to_s
                              
                              language = self.data['language']
-                             #puts language
                              theurl.gsub!(".#{language}",'')
                              theurl = "/#{language}#{theurl}"
                              @url = theurl
         end
     end
     
-    class LanguagePostGenerator < Generator
-        priority :highest
-        def generate(site)
-            site.posts.each { |post|
-                languages = site.config['languages'].dup
-                if (post.data['multilingual'] == nil)
-                    puts "found post #{post.url} without language"
-                    defined_language=post.data['language']
-                    if(!defined_language)
-                        defined_language = languages[0]
-                    end
-                    post.data = GetLanguage.merge_data(post.data, defined_language, false)
-                    languages.delete(defined_language)
-                    
-                    
-                    languages.each do |lang|
-                        puts "Generating post for #{lang}"
-                        newpost = post.dup
-                        newpost.data = Jekyll::Utils.deep_merge_hashes(newpost.data,{
-                                                                       'language' => lang,
-                                                                       'multilingual' => false,
-                                                                       'mainlanguage' => defined_language,
-                                                                       'title' => "#{newpost.data['title']}"
-                                                                       })
-                                                                       site.posts<<newpost
-                    end
-                end
-            }
+    module Paginate
+        class Pagination
+            priority :low
+            
+            def self.createPages(site, page)
+            defined_language=page.data['language']
+            if(defined_language == nil)
+            defined_language = site.config['languages'][0]
         end
         
+        all_posts = site.site_payload['site']['posts']
+        all_posts = all_posts.reject { |p| p['hidden'] }
+        all_posts = all_posts.reject { |p|
+        p['language'] != defined_language
+        }
+        
+        pages = Pager.calculate_pages(all_posts, site.config['paginate'].to_i)
+        (1..pages).each do |num_page|
+        pager = Pager.new(site, num_page, all_posts, pages)
+        if num_page > 1
+        newpage = Page.new(site, site.source, page.dir, page.name)
+        newpage.data = Jekyll::Utils.deep_merge_hashes(newpage.data,{
+        'language' => defined_language,
+        'multilingual' => true
+        })
+        newpage.pager = pager
+        newpage.dir = Pager.paginate_path(site, num_page)
+        site.pages << newpage
+        else
+        page.pager = pager
     end
-    class LanguagePageGenerator < Generator
-        priority :lowest
-        def generate(site)
-            
-            site.pages.each { |page|
-                languages = site.config['languages'].dup
-                if (page.data['multilingual'] == nil)
-                    url = page.url
-                    puts "found page #{url} without language"
-                    defined_language=page.data['language']
-                    if(!defined_language)
-                        defined_language = languages[0]
-                        puts "  Setting default language #{defined_language}"
-                        page.data = GetLanguage.merge_data(page.data, defined_language, false)
-                    end
-                    languages.delete(defined_language)
-                    
-                    
-                    languages.each do |lang|
-                        puts "  Generating page for #{lang}"
-                        newpage = page.dup
-                        newpage.data = Jekyll::Utils.deep_merge_hashes(newpage.data,{
-                                                                       'language' => lang,
-                                                                       'multilingual' => false,
-                                                                       'mainlanguage' => defined_language,
-                                                                       'title' => "#{newpage.data['title']}"
-                                                                       })
-                                                                       site.pages<<newpage
-                    end
+end
+end
+
+def paginate(site, page)
+    Pagination.createPages(site,page)
+end
+
+end
+end
+
+#Generators
+
+class LanguagePostGenerator < Generator
+    priority :highest
+    def generate(site)
+        site.posts.each { |post|
+            languages = site.config['languages'].dup
+            if (post.data['multilingual'] == nil)
+                defined_language=post.data['language']
+                puts "found single language post with main language #{defined_language}: #{post.url}"
+                
+                if(defined_language == nil)
+                    defined_language = languages[0]
                 end
-            }
-        end
+                post.data = GetLanguage.merge_data(post.data, defined_language, false)
+                languages.delete(defined_language)
+                
+                
+                languages.each do |lang|
+                    puts "Generating post for #{lang}"
+                    newpost = post.dup
+                    newpost.data = Jekyll::Utils.deep_merge_hashes(newpost.data,{
+                                                                   'language' => lang,
+                                                                   'multilingual' => false,
+                                                                   'mainlanguage' => defined_language,
+                                                                   'title' => "#{newpost.data['title']}"
+                                                                   })
+                                                                   site.posts<<newpost
+                end
+            end
+        }
     end
     
-    module LanguagePostIndicatorFilter
-        def language_flag(post)
-            if(post != nil && isNonMultilingualPostInDifferentLanguage(post))
-                lang = post['mainlanguage']
-                return "<img src='#{@context.registers[:site].baseurl}/images/#{ lang }.png' alt='#{ lang }' class='flag'/>"
-            end
-            ""
-        end
-        def language_text(post)
-            if(post != nil && isNonMultilingualPostInDifferentLanguage(post))
-                return " (#{ post['mainlanguage']})"
-            end
-            ""
-        end
+end
+class LanguagePageGenerator < Generator
+    priority :lowest
+    def generate(site)
         
-        def isNonMultilingualPostInDifferentLanguage(post)
-            return post['multilingual'] != true && (post['language'] != @context.registers[:page]['language'] || post['mainlanguage'] != nil)
+        site.pages.each { |page|
+            languages = site.config['languages'].dup
+            if (page.data['multilingual'] == nil)
+                url = page.url
+                defined_language=page.data['language']
+                if(!defined_language)
+                    defined_language = languages[0]
+                    puts "Setting default language #{defined_language} for #{url}"
+                    page.data = GetLanguage.merge_data(page.data, defined_language, false)
+                end
+                
+                puts "found single language page with main language #{defined_language}: #{url}"
+                languages.delete(defined_language)
+                
+                languages.each do |lang|
+                    puts "  Generating page for #{lang}"
+                    newpage = page.dup
+                    newpage.data = Jekyll::Utils.deep_merge_hashes(newpage.data,{
+                                                                   'language' => lang,
+                                                                   'multilingual' => false,
+                                                                   'mainlanguage' => defined_language,
+                                                                   'title' => "#{newpage.data['title']}"
+                                                                   })
+                                                                   site.pages<<newpage
+                                                                   
+                                                                   if Jekyll::Paginate::Pager.pagination_enabled?(site) && page.pager != nil
+                                                                       puts "  Pagination found. Generating..."
+                                                                       Jekyll::Paginate::Pagination.createPages(site, newpage)
+                                                                   end
+                end
+            end
+        }
+    end
+end
+
+module LanguagePostIndicatorFilter
+    def language_flag(post)
+        if(post != nil && isNonMultilingualPostInDifferentLanguage(post))
+            lang = post['mainlanguage']
+            return "<img src='#{@context.registers[:site].baseurl}/images/#{ lang }.png' alt='#{ lang };#{ post['language'] };#{@context.registers[:page]['language'] } ' class='flag'/>"
         end
+        ""
+    end
+    def language_text(post)
+        if(post != nil && isNonMultilingualPostInDifferentLanguage(post))
+            return " (#{ post['mainlanguage']})"
+        end
+        ""
     end
     
-    class LanguageArrayFilter < Liquid::Tag
-        Syntax = /(\w+[.]?\w+)\s+(\w+)\s+(\w+[.]?\w+)/o
-        
-        def initialize(tag_name, markup, tokens)
-            if markup =~ Syntax
-                @collection_name = $1
-                @taget_collection_name = $2
-                @taget_language = $3
-                else
-                raise SyntaxError.new("Syntax Error in 'language_array' - Valid syntax: random [source] [var] [language]")
-            end
-            
-            super
-        end
-        
-        def render(context)
-            collection = context[@collection_name]
-            if collection
-                filtered_collection = collection.select { |post|
-                    post.data['language'] == nil || post.data['language'] == context[@taget_language]
-                }
-                context[@taget_collection_name] = filtered_collection
+    def isNonMultilingualPostInDifferentLanguage(post)
+        return post['multilingual'] != true && (post['language'] != @context.registers[:page]['language'] || post['mainlanguage'] != nil)
+    end
+end
+
+class LanguageArrayFilter < Liquid::Tag
+    Syntax = /(\w+[.]?\w+)\s+(\w+)\s+(\w+[.]?\w+)/o
+    
+    def initialize(tag_name, markup, tokens)
+        if markup =~ Syntax
+            @collection_name = $1
+            @taget_collection_name = $2
+            @taget_language = $3
             else
-                context[@taget_collection_name] = collection
-            end
-            return
+            raise SyntaxError.new("Syntax Error in 'language_array' - Valid syntax: random [source] [var] [language]")
         end
+        
+        super
     end
     
+    def render(context)
+        collection = context[@collection_name]
+        if collection
+            filtered_collection = collection.select { |post|
+                post.data['language'] == nil || post.data['language'] == context[@taget_language]
+            }
+            context[@taget_collection_name] = filtered_collection
+            else
+            context[@taget_collection_name] = collection
+        end
+        return
+    end
+end
+
 end
 
 class GetLanguage
