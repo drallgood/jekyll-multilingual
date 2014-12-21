@@ -134,7 +134,7 @@ module Jekyll
                                                              'mainlanguage' => defined_language,
                                                              'title' => "#{newpost.data['title']}"
             })
-            site.posts<<newpost
+            site.posts << newpost
           end
         end
       }
@@ -168,7 +168,7 @@ module Jekyll
                                                              'mainlanguage' => defined_language,
                                                              'title' => "#{newpage.data['title']}"
             })
-            site.pages<<newpage
+            site.pages << newpage
 
             if Jekyll::Paginate::Pager.pagination_enabled?(site) && page.pager != nil
               puts "  Pagination found. Generating..."
