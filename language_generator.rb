@@ -184,7 +184,7 @@ module Jekyll
     def language_flag(post)
       if(post != nil && isNonMultilingualPostInDifferentLanguage(post))
         lang = post['mainlanguage']
-        return "<img src='#{@context.registers[:site].baseurl}/images/#{ lang }.png' alt='#{ lang };#{ post['language'] };#{@context.registers[:page]['language'] } ' class='flag'/>"
+        return "<img src='#{@context.registers[:site].baseurl}/images/#{ lang }.png' alt='#{ lang }' class='flag'/>"
       end
       ""
     end
