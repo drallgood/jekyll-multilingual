@@ -43,9 +43,49 @@ Of course this works with `.md`, `.markdown` and `.html` file extensions.
 
 File lacking any of the above are considered to be written in the default language.
 
+## Preventing a page from being copied into the language folder
+
+When you use this plugin, you automatically define a default language (i.e. the first language in your languages array). Sometimes, you need a page that is created at the root of your site and not in the language specific subfolders. 
+
+How do you do this? Simple: you set the language to "none".
+
+**Example:** You're hosting a blog on github pages and want index page to be some kind of a gateway where visitor has to select language (or it's selected by JavaScript after analyzing Accept header reflected by some external server).
+
+Steps:
+
+1. Create `source/index-root.html` with custom welcome message and a header:
+
+```
+---
+layout: root
+permalink: /index.html
+language: none
+---
+Please select language...
+```
+
+2. Create `source/_layouts/root.html` if needed (to include `head.html` and so on), example:
+
+```
+{% capture root_url %}{{ site.root | strip_slash }}{% endcapture %}
+{% include head.html %}
+
+<body>
+	<div class="container">
+	    <div id="content" class="inner">{{ content | expand_urls: root_url }}</div>
+        </div>
+</body>
+</html>
+```
+
 ## Inspiration
 
 Full credit should go to the [Jekyll Multiple Languages Plugin](https://github.com/screeninteraction/jekyll-multiple-languages-plugin). The translation code is heavily based on their work (and a copy for the most part).
+
+## Contributers
+
+- [Patrice Brend'amour](http://brendamour.net)
+- [Pawel Wilk](https://github.com/siefca)
 
 ## Contact
 

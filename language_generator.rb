@@ -24,7 +24,7 @@ module Jekyll
 
       if(language)
         theurl.sub!("/#{language}/",'/')
-        if (language != 'root')
+        if (language != 'none')
           theurl = "/#{language}#{theurl}"
         end
       end
@@ -63,7 +63,7 @@ module Jekyll
 
       language = self.data['language']
       #puts "#{@url}: #{language}"
-      if (language != 'root')
+      if (language != 'none')
         theurl.gsub!(".#{language}",'')
         theurl = "/#{language}#{theurl}"
       end
@@ -152,7 +152,7 @@ module Jekyll
 
       site.pages.each { |page|
         languages = site.config['languages'].dup
-        if (page.data['multilingual'] == nil && page.data['language'] != 'root')
+        if (page.data['multilingual'] == nil && page.data['language'] != 'none')
           url = page.url
           defined_language=page.data['language']
           if(!defined_language)
