@@ -34,11 +34,13 @@ This plugin supports two kinds of posts/pages:
 - multilingual (i.e. one post/page per language.)
 
 Single-language posts/pages have a primary language that is indicated by a tag in the post's/page's front-matter:  
-    language: en
+`language: en`
 
 Multilingual posts/pages define their language in the filename (any language tag in the front-matter is ignored):
-    2014-08-04-foo-bar.en.md (for posts)
-    foo-bar.en.md for pages 
+    
+- 2014-08-04-foo-bar.en.md (for posts)
+- foo-bar.en.md for pages 
+    
 Of course this works with `.md`, `.markdown` and `.html` file extensions.
 
 File lacking any of the above are considered to be written in the default language.
