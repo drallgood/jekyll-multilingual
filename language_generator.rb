@@ -1,5 +1,25 @@
 module Jekyll
 
+  class Site
+    def instantiate_subclasses(klass)
+      if klass.name == 'Jekyll::Generator'
+        [Jekyll::LanguagePageGenerator.new(config), Jekyll::LanguagePostGenerator.new(config)].concat(klass.descendants.select do |c|
+          c.name.split('::').last !~ /^Language.+Generator/
+        end.select do |c|
+          !safe || c.safe
+        end.sort.map do |c|
+          c.new(config)
+        end)
+      else
+        klass.descendants.select do |c|
+          !safe || c.safe
+        end.sort.map do |c|
+          c.new(config)
+        end
+      end
+    end
+  end
+
   # Monkey Patches
   class Page
     # The generated relative url of this page. e.g. /about.html.
@@ -108,6 +128,35 @@ module Jekyll
       def paginate(site, page)
         Pagination.createPages(site,page)
       end
+
+      def generate(site)
+        if Pager.pagination_enabled?(site)
+          if templates = template_pages(site) # ! pages instead of page
+            templates.each { |template|
+              paginate(site, template)
+            }
+          else
+            Jekyll.logger.warn "Pagination:", "Pagination is enabled, but I couldn't find " +
+            "an index.html page to use as the pagination template. Skipping pagination."
+          end
+        end
+      end
+
+      # Public: Find the Jekyll::Page(s) which will act as the pager templates
+      #
+      # site - the Jekyll::Site object
+      #
+      # Returns the Jekyll::Page objects which will act as the pager templates
+      # Original method template_page is found in jekyll-paginate/pagination.rb
+      # Has been modified to paginate {language}/index.html
+      def template_pages(site)
+        site.pages.dup.select do |page|
+          Pager.pagination_candidate?(site.config, page)
+        end.sort do |one, two|
+          two.path.size <=> one.path.size
+        end.slice(0, 2)
+      end
+
 
     end
   end
@@ -239,7 +288,7 @@ end
 class GetLanguage
   # Get Language
   def self.get_language(url)
-    lang=url.match(/.*\.([a-z]{2})(?:\.markdown|\.md|\.html)?(?:\/)?$/)
+    lang=url.match(/.*\.([a-z]{2})\.(?:markdown|md|html)?(?:\/)?$/)
     if(lang && lang[1] != "md")
       return lang[1]
     end
